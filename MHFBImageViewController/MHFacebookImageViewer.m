@@ -24,7 +24,6 @@
 
 
 #import "MHFacebookImageViewer.h"
-#import "UIImageView+AFNetworking.h"
 static const CGFloat kMinBlackMaskAlpha = 0.3f;
 static const CGFloat kMaxImageScale = 2.5f;
 static const CGFloat kMinImageScale = 1.0f;
@@ -60,7 +59,7 @@ static const CGFloat kMinImageScale = 1.0f;
 @property(nonatomic) UIStatusBarStyle statusBarStyle;
 
 - (void) loadAllRequiredViews;
-- (void) setImageURL:(NSURL *)imageURL defaultImage:(UIImage*)defaultImage imageIndex:(NSInteger)imageIndex;
+- (void) setImage:(UIImage *)image defaultImage:(UIImage*)defaultImage imageIndex:(NSInteger)imageIndex;
 
 @end
 
@@ -91,7 +90,7 @@ static const CGFloat kMinImageScale = 1.0f;
           forControlEvents:UIControlEventTouchUpInside];
 }
 
-- (void) setImageURL:(NSURL *)imageURL defaultImage:(UIImage*)defaultImage imageIndex:(NSInteger)imageIndex {
+- (void) setImage:(UIImage *)image defaultImage:(UIImage*)defaultImage imageIndex:(NSInteger)imageIndex {
     _imageIndex = imageIndex;
     _defaultImage = defaultImage;
     
@@ -102,18 +101,10 @@ static const CGFloat kMinImageScale = 1.0f;
             [__scrollView addSubview:__imageView];
             __imageView.contentMode = UIViewContentModeScaleAspectFill;
         }
-        __block UIImageView * _imageViewInTheBlock = __imageView;
-        __block MHFacebookImageViewerCell * _justMeInsideTheBlock = self;
-        __block UIScrollView * _scrollViewInsideBlock = __scrollView;
-        
-        [__imageView setImageWithURLRequest:[NSURLRequest requestWithURL:imageURL] placeholderImage:defaultImage success:^(NSURLRequest *request, NSHTTPURLResponse *response, UIImage *image) {
-            [_scrollViewInsideBlock setZoomScale:1.0f animated:YES];
-            [_imageViewInTheBlock setImage:image];
-            _imageViewInTheBlock.frame = [_justMeInsideTheBlock centerFrameFromImage:_imageViewInTheBlock.image];
-            
-        } failure:^(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error) {
-            NSLog(@"Image From URL Not loaded");
-        }];
+     
+        [__scrollView setZoomScale:1.0f animated:YES];
+        [__imageView setImage:image];
+        __imageView.frame = [self centerFrameFromImage:__imageView.image];
         
         if(_imageIndex==_initialIndex && !_isLoaded){
             __imageView.frame = _originalFrameRelativeToScreen;
@@ -435,6 +426,7 @@ static const CGFloat kMinImageScale = 1.0f;
 @implementation MHFacebookImageViewer
 @synthesize rootViewController = _rootViewController;
 @synthesize imageURL = _imageURL;
+@synthesize image = _image;
 @synthesize openingBlock = _openingBlock;
 @synthesize closingBlock = _closingBlock;
 @synthesize senderView = _senderView;
@@ -473,12 +465,7 @@ static const CGFloat kMinImageScale = 1.0f;
         [imageViewerCell loadAllRequiredViews];
         imageViewerCell.backgroundColor = [UIColor clearColor];
     }
-    if(!self.imageDatasource) {
-        // Just to retain the old version
-        [imageViewerCell setImageURL:_imageURL defaultImage:_senderView.image imageIndex:0];
-    } else {
-        [imageViewerCell setImageURL:[self.imageDatasource imageURLAtIndex:indexPath.row imageViewer:self] defaultImage:[self.imageDatasource imageDefaultAtIndex:indexPath.row imageViewer:self]imageIndex:indexPath.row];
-    }
+    [imageViewerCell setImage:_image defaultImage:_senderView.image imageIndex:0];
     return imageViewerCell;
 }
 
@@ -566,6 +553,7 @@ static const CGFloat kMinImageScale = 1.0f;
 #pragma mark - Custom Gesture Recognizer that will Handle imageURL
 @interface MHFacebookImageViewerTapGestureRecognizer : UITapGestureRecognizer
 @property(nonatomic,strong) NSURL * imageURL;
+@property(nonatomic, strong) UIImage *image;
 @property(nonatomic,strong) MHFacebookImageViewerOpeningBlock openingBlock;
 @property(nonatomic,strong) MHFacebookImageViewerClosingBlock closingBlock;
 @property(nonatomic,weak) id<MHFacebookImageViewerDatasource> imageDatasource;
@@ -597,6 +585,17 @@ static const CGFloat kMinImageScale = 1.0f;
 
 - (void) setupImageViewerWithImageURL:(NSURL*)url {
     [self setupImageViewerWithImageURL:url onOpen:nil onClose:nil];
+}
+
+- (void) setupImageViewerwithImage:(UIImage *)image {
+    self.userInteractionEnabled = YES;
+    MHFacebookImageViewerTapGestureRecognizer *  tapGesture = [[MHFacebookImageViewerTapGestureRecognizer alloc] initWithTarget:self action:@selector(didTap:)];
+    tapGesture.imageURL = nil;
+    tapGesture.image = image;
+    tapGesture.openingBlock = nil;
+    tapGesture.closingBlock = nil;
+    [self addGestureRecognizer:tapGesture];
+    tapGesture = nil;
 }
 
 
@@ -633,6 +632,7 @@ static const CGFloat kMinImageScale = 1.0f;
     MHFacebookImageViewer * imageBrowser = [[MHFacebookImageViewer alloc]init];
     imageBrowser.senderView = self;
     imageBrowser.imageURL = gestureRecognizer.imageURL;
+    imageBrowser.image = gestureRecognizer.image;
     imageBrowser.openingBlock = gestureRecognizer.openingBlock;
     imageBrowser.closingBlock = gestureRecognizer.closingBlock;
     imageBrowser.imageDatasource = gestureRecognizer.imageDatasource;

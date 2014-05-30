@@ -40,6 +40,7 @@ typedef void (^MHFacebookImageViewerClosingBlock)(void);
 @interface MHFacebookImageViewer : UIViewController
 @property (weak, readonly, nonatomic) UIViewController *rootViewController;
 @property (nonatomic,strong) NSURL * imageURL;
+@property (nonatomic, strong) UIImage * image;
 @property (nonatomic,strong) UIImageView * senderView;
 @property (nonatomic,weak) MHFacebookImageViewerOpeningBlock openingBlock;
 @property (nonatomic,weak) MHFacebookImageViewerClosingBlock closingBlock;
@@ -55,6 +56,7 @@ typedef void (^MHFacebookImageViewerClosingBlock)(void);
 
 @interface UIImageView(MHFacebookImageViewer)
 - (void) setupImageViewer;
+- (void) setupImageViewerwithImage:(UIImage *)image;
 - (void) setupImageViewerWithCompletionOnOpen:(MHFacebookImageViewerOpeningBlock)open onClose:(MHFacebookImageViewerClosingBlock)close;
 - (void) setupImageViewerWithImageURL:(NSURL*)url;
 - (void) setupImageViewerWithImageURL:(NSURL *)url onOpen:(MHFacebookImageViewerOpeningBlock)open onClose:(MHFacebookImageViewerClosingBlock)close;
